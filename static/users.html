@@ -65,14 +65,14 @@
       summary.textContent = '불러오는 중...';
       tbody.innerHTML = '<tr><td colspan="4" class="muted">불러오는 중...</td></tr>';
       try {
-        const res = await fetch('/users?limit=1000');
+        const res = await fetch('/game/users?limit=1000');
         if (!res.ok) throw new Error('요청 실패');
         const users = await res.json();
         
         // 각 사용자별로 점수 정보 가져오기
         const usersWithScores = await Promise.all(users.map(async (user) => {
           try {
-            const scoreRes = await fetch(`/user-scores?email=${encodeURIComponent(user.email)}`);
+            const scoreRes = await fetch(`/game/user-scores?email=${encodeURIComponent(user.email)}`);
             if (scoreRes.ok) {
               const scores = await scoreRes.json();
               const maxScore = scores.length > 0 ? Math.max(...scores.map(s => s.score)) : 0;

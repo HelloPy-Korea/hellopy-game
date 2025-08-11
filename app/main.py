@@ -95,6 +95,11 @@ def register_email(payload: RegisterEmailRequest, db: Session = Depends(get_db))
         db.commit()
     return RegisterEmailResponse(ok=True)
 
+# Duplicate endpoints under /game prefix for environments where backend is routed behind /game
+@app.post("/game/register", response_model=RegisterEmailResponse)
+def register_email_game(payload: RegisterEmailRequest, db: Session = Depends(get_db)):
+    return register_email(payload, db)
+
 @app.post("/score")
 async def submit_score(payload: SubmitScoreRequest, db: Session = Depends(get_db)):
     email = payload.email.lower().strip()
@@ -108,6 +113,10 @@ async def submit_score(payload: SubmitScoreRequest, db: Session = Depends(get_db
     # Publish leaderboard update
     await publish_leaderboard()
     return {"ok": True}
+
+@app.post("/game/score")
+async def submit_score_game(payload: SubmitScoreRequest, db: Session = Depends(get_db)):
+    return await submit_score(payload, db)
 
 async def publish_leaderboard():
     db = SessionLocal()
@@ -157,6 +166,10 @@ def get_leaderboard(db: Session = Depends(get_db)):
         .limit(10)
         .all()
     )
+
+@app.get("/game/leaderboard", response_model=LeaderboardResponse)
+def get_leaderboard_game(db: Session = Depends(get_db)):
+    return get_leaderboard(db)
     return LeaderboardResponse(
         top=[
             ScoreItem(email=r.user_email, score=r.score, created_at=r.created_at)
@@ -175,6 +188,10 @@ def list_users(limit: int = 100, db: Session = Depends(get_db)):
     )
     return [UserItem(email=r.email, created_at=r.created_at) for r in rows]
 
+@app.get("/game/users", response_model=List[UserItem])
+def list_users_game(limit: int = 100, db: Session = Depends(get_db)):
+    return list_users(limit=limit, db=db)
+
 @app.get("/user-scores")
 def get_user_scores(email: str, db: Session = Depends(get_db)):
     """특정 사용자의 모든 점수를 가져옵니다."""
@@ -187,9 +204,17 @@ def get_user_scores(email: str, db: Session = Depends(get_db)):
         for score in scores
     ]
 
+@app.get("/game/user-scores")
+def get_user_scores_game(email: str, db: Session = Depends(get_db)):
+    return get_user_scores(email=email, db=db)
+
 @app.get("/healthz")
 def healthz():
     return {"ok": True}
+
+@app.get("/game/healthz")
+def healthz_game():
+    return healthz()
 
 # Serve frontend from server/static
 STATIC_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "static"))
@@ -225,6 +250,7 @@ def serve_game_user_slash():
 
 # Mount more specific paths first so they take precedence
 app.mount("/config", StaticFiles(directory=CONFIG_DIR, html=False), name="config")
+app.mount("/game/config", StaticFiles(directory=CONFIG_DIR, html=False), name="config_game")
 app.mount("/game/", StaticFiles(directory=STATIC_DIR, html=True), name="frontend")
 # Serve root-scoped assets used by pages (e.g., /style.css, /landing.js, /img/...)
 app.mount("/", StaticFiles(directory=STATIC_DIR, html=False), name="assets")

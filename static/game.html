@@ -534,7 +534,7 @@
                 this.snakeImage.onerror = () => {
                     alert('뱀 이미지를 로드할 수 없습니다. 페이지를 새로고침해주세요.');
                 };
-                this.snakeImage.src = '/img/py_0.png';
+                this.snakeImage.src = '/game/img/py_0.png';
                 
                 // 먹이 이미지 로드
                 this.foodImage = new Image();
@@ -546,7 +546,7 @@
                     console.warn('먹이 이미지를 로드할 수 없습니다. 기본 빨간색 네모를 사용합니다.');
                     this.foodImageLoaded = false;
                 };
-                this.foodImage.src = '/img/py_jogak.png';
+                this.foodImage.src = '/game/img/py_jogak.png';
                 
                 this.setupEventListeners();
                 // 초기 draw는 이미지 로드 후에 실행됨

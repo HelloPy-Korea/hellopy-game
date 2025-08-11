@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
       emailInput?.focus();
       return;
     }
-    fetch('/register', {
+    fetch('/game/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email })

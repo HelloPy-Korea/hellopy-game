@@ -100,11 +100,19 @@ def register_email(payload: RegisterEmailRequest, db: Session = Depends(get_db))
 def register_email_game(payload: RegisterEmailRequest, db: Session = Depends(get_db)):
     return register_email(payload, db)
 
+@app.post("/game/register/", response_model=RegisterEmailResponse)
+def register_email_game_slash(payload: RegisterEmailRequest, db: Session = Depends(get_db)):
+    return register_email(payload, db)
+
 @app.post("/score")
 async def submit_score(payload: SubmitScoreRequest, db: Session = Depends(get_db)):
     email = payload.email.lower().strip()
-    if not db.query(User).filter(User.email == email).first():
-        raise HTTPException(status_code=400, detail="Email not registered")
+    # ensure user exists (auto-register on first score submission)
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        user = User(email=email)
+        db.add(user)
+        db.commit()
 
     score = Score(user_email=email, score=payload.score)
     db.add(score)
@@ -116,6 +124,10 @@ async def submit_score(payload: SubmitScoreRequest, db: Session = Depends(get_db
 
 @app.post("/game/score")
 async def submit_score_game(payload: SubmitScoreRequest, db: Session = Depends(get_db)):
+    return await submit_score(payload, db)
+
+@app.post("/game/score/")
+async def submit_score_game_slash(payload: SubmitScoreRequest, db: Session = Depends(get_db)):
     return await submit_score(payload, db)
 
 async def publish_leaderboard():
@@ -170,6 +182,10 @@ def get_leaderboard(db: Session = Depends(get_db)):
 @app.get("/game/leaderboard", response_model=LeaderboardResponse)
 def get_leaderboard_game(db: Session = Depends(get_db)):
     return get_leaderboard(db)
+
+@app.get("/game/leaderboard/", response_model=LeaderboardResponse)
+def get_leaderboard_game_slash(db: Session = Depends(get_db)):
+    return get_leaderboard(db)
     return LeaderboardResponse(
         top=[
             ScoreItem(email=r.user_email, score=r.score, created_at=r.created_at)
@@ -192,6 +208,10 @@ def list_users(limit: int = 100, db: Session = Depends(get_db)):
 def list_users_game(limit: int = 100, db: Session = Depends(get_db)):
     return list_users(limit=limit, db=db)
 
+@app.get("/game/users/", response_model=List[UserItem])
+def list_users_game_slash(limit: int = 100, db: Session = Depends(get_db)):
+    return list_users(limit=limit, db=db)
+
 @app.get("/user-scores")
 def get_user_scores(email: str, db: Session = Depends(get_db)):
     """특정 사용자의 모든 점수를 가져옵니다."""
@@ -208,12 +228,20 @@ def get_user_scores(email: str, db: Session = Depends(get_db)):
 def get_user_scores_game(email: str, db: Session = Depends(get_db)):
     return get_user_scores(email=email, db=db)
 
+@app.get("/game/user-scores/")
+def get_user_scores_game_slash(email: str, db: Session = Depends(get_db)):
+    return get_user_scores(email=email, db=db)
+
 @app.get("/healthz")
 def healthz():
     return {"ok": True}
 
 @app.get("/game/healthz")
 def healthz_game():
+    return healthz()
+
+@app.get("/game/healthz/")
+def healthz_game_slash():
     return healthz()
 
 # Serve frontend from server/static

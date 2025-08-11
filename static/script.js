@@ -676,8 +676,8 @@ const API_BASE = (function() {
     const params = new URLSearchParams(window.location.search);
     const fromParam = params.get('api');
     if (fromParam) return fromParam.replace(/\/$/, '');
-    // default to same-origin server on / (CORS-enabled)
-    return '';
+    // default to same-origin server on /game for proxy environments
+    return '/game';
 })();
 
 function registerEmail(email) {

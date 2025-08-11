@@ -786,7 +786,7 @@
                     const email = urlParams.get('email');
                     
                     if (email && this.score > 0) {
-                        const response = await fetch('/score', {
+                        const response = await fetch('/game/score', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',

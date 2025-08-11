@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PY-SON | 등록된 유저</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .users-container { max-width: 900px; width: 95vw; }
+    .users-header { display:flex; justify-content: space-between; align-items:center; margin-bottom: 1rem; }
+    .users-actions { display:flex; gap:.5rem; }
+    table { width: 100%; border-collapse: collapse; background:#fff; border:1px solid #e0e0e0; border-radius: 10px; overflow:hidden; }
+    thead { background:#f5f5f5; }
+    th, td { padding: .8rem 1rem; border-bottom: 1px solid #eee; text-align: left; font-size: 0.95rem; }
+    tbody tr:hover { background:#fafafa; }
+    .muted { color:#666; font-size:.9rem; }
+    .pill { display:inline-block; padding:.2rem .5rem; background:#e8f5e9; color:#2e7d32; border:1px solid #c8e6c9; border-radius:999px; font-size:.8rem; font-weight:600; }
+    .score-pill { display:inline-block; padding:.2rem .5rem; background:#fff3e0; color:#e65100; border:1px solid #ffcc02; border-radius:999px; font-size:.8rem; font-weight:600; }
+    .count-pill { display:inline-block; padding:.2rem .5rem; background:#e3f2fd; color:#1565c0; border:1px solid #90caf9; border-radius:999px; font-size:.8rem; font-weight:600; }
+    .right { text-align:right; }
+    .search-box { width: 220px; padding:.55rem .7rem; border:2px solid #e0e0e0; border-radius:10px; }
+    .search-box:focus { outline:none; border-color:#4CAF50; box-shadow:0 0 0 3px rgba(76,175,80,.1); }
+  </style>
+</head>
+<body>
+  <div class="game-container users-container">
+    <div class="users-header">
+      <h2 style="margin:0; color:#333">등록된 유저</h2>
+      <div class="users-actions">
+        <input id="search" class="search-box" type="search" placeholder="이메일 검색" />
+        <button id="refreshBtn" class="secondary-btn">새로고침</button>
+        <a class="secondary-link" href="/" style="align-self:center">게임으로 돌아가기</a>
+      </div>
+    </div>
+    <p class="muted" id="summary">불러오는 중...</p>
+    <div style="overflow:auto">
+      <table>
+        <thead>
+          <tr>
+            <th>이메일</th>
+            <th class="right">등록 시간</th>
+            <th class="right">최고 점수</th>
+            <th class="right">총 게임 수</th>
+          </tr>
+        </thead>
+        <tbody id="tbody">
+          <tr><td colspan="2" class="muted">불러오는 중...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const tbody = document.getElementById('tbody');
+    const summary = document.getElementById('summary');
+    const search = document.getElementById('search');
+
+    function fmt(dt) {
+      try { return new Date(dt).toLocaleString(); } catch { return dt; }
+    }
+
+    let allRows = [];
+
+    async function loadUsers() {
+      summary.textContent = '불러오는 중...';
+      tbody.innerHTML = '<tr><td colspan="4" class="muted">불러오는 중...</td></tr>';
+      try {
+        const res = await fetch('/users?limit=1000');
+        if (!res.ok) throw new Error('요청 실패');
+        const users = await res.json();
+        
+        // 각 사용자별로 점수 정보 가져오기
+        const usersWithScores = await Promise.all(users.map(async (user) => {
+          try {
+            const scoreRes = await fetch(`/user-scores?email=${encodeURIComponent(user.email)}`);
+            if (scoreRes.ok) {
+              const scores = await scoreRes.json();
+              const maxScore = scores.length > 0 ? Math.max(...scores.map(s => s.score)) : 0;
+              return {
+                ...user,
+                maxScore,
+                gameCount: scores.length
+              };
+            }
+          } catch (e) {
+            console.error('점수 로드 실패:', e);
+          }
+          return {
+            ...user,
+            maxScore: 0,
+            gameCount: 0
+          };
+        }));
+        
+        allRows = usersWithScores;
+        render(usersWithScores);
+      } catch (e) {
+        tbody.innerHTML = '<tr><td colspan="4" class="muted">로드 실패: ' + (e.message || e) + '</td></tr>';
+        summary.textContent = '로드 실패';
+      }
+    }
+
+    function render(rows) {
+      if (!rows || rows.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="muted">데이터가 없습니다</td></tr>';
+        summary.textContent = '0명';
+        return;
+      }
+      const q = (search.value || '').trim().toLowerCase();
+      const filtered = q ? rows.filter(r => r.email.toLowerCase().includes(q)) : rows;
+      tbody.innerHTML = filtered.map(r => `
+        <tr>
+          <td>${r.email}</td>
+          <td class="right">${fmt(r.created_at)}</td>
+          <td class="right">${r.maxScore > 0 ? `<span class="score-pill">${r.maxScore}</span>` : '-'}</td>
+          <td class="right">${r.gameCount > 0 ? `<span class="count-pill">${r.gameCount}</span>` : '-'}</td>
+        </tr>
+      `).join('');
+      summary.innerHTML = `총 <span class="pill">${rows.length}</span>명 / 필터: <span class="pill">${filtered.length}</span>명`;
+    }
+
+    document.getElementById('refreshBtn').addEventListener('click', loadUsers);
+    search.addEventListener('input', () => render(allRows));
+
+    loadUsers();
+  </script>
+</body>
+</html>

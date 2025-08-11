@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PY-SON 게임</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            -webkit-touch-callout: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            position: fixed;
+            touch-action: manipulation;
+            -webkit-text-size-adjust: 100%;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            background: white;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+        }
+        
+        .game-container {
+            text-align: center;
+            background: white;
+            padding: 5px 10px 30px 10px;
+            border-radius: 15px;
+            box-shadow: none;
+            width: 95%;
+            max-width: 1000px;
+            margin-top: 5px;
+        }
+        
+        .game-controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 15px 0 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        .primary-btn {
+            background: linear-gradient(145deg, #8b6fff, #7e5fff);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 3px 10px rgba(126, 95, 255, 0.3);
+            min-width: 100px;
+        }
+        
+        .primary-btn:hover {
+            background: linear-gradient(145deg, #9a7fff, #8b6fff);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(126, 95, 255, 0.4);
+        }
+        
+        .primary-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 10px rgba(126, 95, 255, 0.3);
+        }
+        
+        .primary-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .secondary-btn {
+            background: linear-gradient(145deg, #f8f9fa, #e9ecef);
+            color: #495057;
+            border: 2px solid #dee2e6;
+            padding: 10px 22px;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            min-width: 100px;
+        }
+        
+        .secondary-btn:hover {
+            background: linear-gradient(145deg, #e9ecef, #dee2e6);
+            border-color: #adb5bd;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .secondary-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            color: #7e5fff;
+            margin-bottom: 5px;
+            font-size: 1.5rem;
+            margin-top: 10px;
+        }
+        
+        .score-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+        
+        .score {
+            padding: 6px 12px;
+        }
+        
+        #gameCanvas {
+            border: 3px solid #333;
+            border-radius: 10px;
+            background: #000;
+            display: block;
+            margin: 0 auto 5px;
+            max-width: 100%;
+            height: auto;
+        }
+        
+        .controls {
+            margin-bottom: 10px;
+        }
+        
+
+        
+        .mobile-controls {
+            display: block;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+        
+        .dpad-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            width: 250px;
+            height: 250px;
+            margin: 0 auto;
+            background: linear-gradient(145deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+            border-radius: 50%;
+            box-shadow: 
+                inset 0 2px 4px rgba(255,255,255,0.2),
+                0 8px 16px rgba(126, 95, 255, 0.2);
+        }
+        
+
+        
+        .dpad-btn {
+            position: absolute;
+            background: linear-gradient(145deg, #8b6fff, #7e5fff);
+            border: 3px solid #6a4fd8;
+            box-shadow: 
+                inset 0 2px 4px rgba(255,255,255,0.3),
+                0 4px 8px rgba(126, 95, 255, 0.3),
+                0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: white;
+            cursor: pointer;
+            touch-action: manipulation;
+            transition: all 0.2s ease;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+        
+        .dpad-btn:hover {
+            background: linear-gradient(145deg, #9a7fff, #8b6fff);
+            box-shadow: 
+                inset 0 2px 4px rgba(255,255,255,0.3),
+                0 6px 12px rgba(126, 95, 255, 0.4),
+                0 3px 6px rgba(0,0,0,0.15);
+        }
+        
+        .dpad-btn:active {
+            background: linear-gradient(145deg, #6a4fd8, #5a3fc8);
+            box-shadow: 
+                inset 0 2px 4px rgba(0,0,0,0.2),
+                0 2px 4px rgba(126, 95, 255, 0.2);
+        }
+        
+        .dpad-up {
+            width: 70px;
+            height: 45px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) translateY(-57.5px);
+            border-radius: 22px 22px 0 0;
+        }
+        
+        .dpad-down {
+            width: 70px;
+            height: 45px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) translateY(57.5px);
+            border-radius: 0 0 22px 22px;
+        }
+        
+        .dpad-left {
+            width: 45px;
+            height: 70px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) translateX(-57.5px);
+            border-radius: 22px 0 0 22px;
+        }
+        
+        .dpad-right {
+            width: 45px;
+            height: 70px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) translateX(57.5px);
+            border-radius: 0 22px 22px 0;
+        }
+        
+        .game-over {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px;
+            border-radius: 25px;
+            text-align: center;
+            z-index: 1000;
+            box-shadow: 
+                0 20px 40px rgba(0,0,0,0.3),
+                0 0 0 1px rgba(255,255,255,0.1),
+                inset 0 1px 0 rgba(255,255,255,0.2);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255,255,255,0.2);
+            min-width: 320px;
+            animation: gameOverSlideIn 0.5s ease-out;
+        }
+        
+        .game-over-backdrop {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(5px);
+            z-index: 999;
+            animation: backdropFadeIn 0.3s ease-out;
+        }
+        
+        @keyframes backdropFadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+        
+        @keyframes gameOverSlideIn {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+        
+        .game-over h2 {
+            color: white;
+            margin-bottom: 25px;
+            font-size: 2.5rem;
+            font-weight: bold;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            letter-spacing: 2px;
+        }
+        
+        .game-over p {
+            color: rgba(255,255,255,0.9);
+            margin-bottom: 30px;
+            font-size: 1.3rem;
+            font-weight: 600;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        }
+        
+        .game-over p span {
+            background: linear-gradient(45deg, #ffd700, #ffed4e);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: bold;
+            font-size: 1.5rem;
+            text-shadow: none;
+            animation: scoreGlow 2s ease-in-out infinite alternate;
+        }
+        
+        @keyframes scoreGlow {
+            from {
+                filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.5));
+            }
+            to {
+                filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.8));
+            }
+        }
+        
+        .game-over button {
+            background: linear-gradient(145deg, #ff6b6b, #ee5a52);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 
+                0 8px 20px rgba(255,107,107,0.4),
+                inset 0 1px 0 rgba(255,255,255,0.2);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            min-width: 150px;
+        }
+        
+        .game-over button:hover {
+            background: linear-gradient(145deg, #ff5252, #d32f2f);
+            transform: translateY(-3px);
+            box-shadow: 
+                0 12px 25px rgba(255,107,107,0.5),
+                inset 0 1px 0 rgba(255,255,255,0.2);
+        }
+        
+        .game-over button:active {
+            transform: translateY(-1px);
+            box-shadow: 
+                0 6px 15px rgba(255,107,107,0.4),
+                inset 0 1px 0 rgba(255,255,255,0.2);
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                padding: 3px 5px 20px 5px;
+            }
+            
+            h1 {
+                font-size: 1.4rem;
+                margin-bottom: 5px;
+            }
+            
+            .game-container {
+                padding: 3px 8px 25px 8px;
+                width: 98%;
+                margin-top: 3px;
+            }
+            
+            .game-controls {
+                gap: 10px;
+                margin: 10px 0 15px 0;
+            }
+            
+            .primary-btn {
+                padding: 10px 20px;
+                font-size: 14px;
+                min-width: 100px;
+            }
+            
+            .secondary-btn {
+                padding: 8px 18px;
+                font-size: 13px;
+                min-width: 80px;
+            }
+            
+            #gameCanvas {
+                width: 100%;
+                max-width: 700px;
+            }
+            
+            .dpad-container {
+                width: 200px;
+                height: 200px;
+            }
+            
+            .dpad-up, .dpad-down {
+                width: 60px;
+                height: 40px;
+            }
+            
+            .dpad-up {
+                transform: translate(-50%, -50%) translateY(-50px);
+            }
+            
+            .dpad-down {
+                transform: translate(-50%, -50%) translateY(50px);
+            }
+            
+            .dpad-left, .dpad-right {
+                width: 40px;
+                height: 60px;
+            }
+            
+            .dpad-left {
+                transform: translate(-50%, -50%) translateX(-50px);
+            }
+            
+            .dpad-right {
+                transform: translate(-50%, -50%) translateX(50px);
+            }
+            
+            .score-info {
+                flex-direction: row;
+                justify-content: space-between;
+            }
+            
+            .game-over {
+                width: 90%;
+                max-width: 300px;
+                padding: 30px 20px;
+                min-width: auto;
+            }
+            
+            .game-over h2 {
+                font-size: 2rem;
+                margin-bottom: 20px;
+            }
+            
+            .game-over p {
+                font-size: 1.1rem;
+                margin-bottom: 25px;
+            }
+            
+            .game-over button {
+                padding: 12px 25px;
+                font-size: 1rem;
+                min-width: 120px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>PY-SON</h1>
+        
+        <div class="score-info">
+            <div class="score">점수: <span id="score">0</span></div>
+            <div class="game-controls">
+                <button id="startBtn" class="primary-btn">게임 시작</button>
+                <button id="restartBtn" class="secondary-btn">재시작</button>
+            </div>
+        </div>
+        
+        <canvas id="gameCanvas" width="900" height="600"></canvas>
+        
+        <div class="controls">
+            <p>방향키로 조작하세요</p>
+        </div>
+        
+        <!-- 모바일 컨트롤 -->
+        <div class="mobile-controls">
+            <div class="dpad-container">
+
+                <button class="dpad-btn dpad-up" data-direction="up">▲</button>
+                <button class="dpad-btn dpad-down" data-direction="down">▼</button>
+                <button class="dpad-btn dpad-left" data-direction="left">◀</button>
+                <button class="dpad-btn dpad-right" data-direction="right">▶</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="gameOverBackdrop" class="game-over-backdrop"></div>
+    <div id="gameOver" class="game-over">
+        <h2>🎮 게임 오버!</h2>
+        <p>🏆 최종 점수: <span id="finalScore">0</span>점</p>
+        <button id="playAgainBtn">🔄 다시 하기</button>
+    </div>
+
+    <script>
+        class SnakeGame {
+            constructor() {
+                this.canvas = document.getElementById('gameCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.scoreElement = document.getElementById('score');
+                this.finalScoreElement = document.getElementById('finalScore');
+                this.gameOverElement = document.getElementById('gameOver');
+                
+                // 게임 설정
+                this.cellSize = 60; // 40에서 60으로 증가
+                this.width = this.canvas.width;
+                this.height = this.canvas.height;
+                
+                // 게임 상태
+                this.snake = [{x: 300, y: 300}]; // 새로운 크기에 맞게 조정
+                this.direction = {x: this.cellSize, y: 0};
+                this.food = this.generateFood();
+                this.score = 0;
+                this.gameRunning = false;
+                this.gameLoop = null;
+                this.foodImageLoaded = false;
+                
+                // 뱀 이미지 로드 (필수)
+                this.snakeImage = new Image();
+                this.snakeImage.onload = () => {
+                    this.draw();
+                    // 이미지 로드 완료 후 버튼 활성화
+                    document.getElementById('startBtn').disabled = false;
+                };
+                this.snakeImage.onerror = () => {
+                    alert('뱀 이미지를 로드할 수 없습니다. 페이지를 새로고침해주세요.');
+                };
+                this.snakeImage.src = '/img/py_0.png';
+                
+                // 먹이 이미지 로드
+                this.foodImage = new Image();
+                this.foodImage.onload = () => {
+                    this.foodImageLoaded = true;
+                    this.draw();
+                };
+                this.foodImage.onerror = () => {
+                    console.warn('먹이 이미지를 로드할 수 없습니다. 기본 빨간색 네모를 사용합니다.');
+                    this.foodImageLoaded = false;
+                };
+                this.foodImage.src = '/img/py_jogak.png';
+                
+                this.setupEventListeners();
+                // 초기 draw는 이미지 로드 후에 실행됨
+            }
+            
+            setupEventListeners() {
+                // 키보드 이벤트
+                document.addEventListener('keydown', (e) => {
+                    if (!this.gameRunning) return;
+                    
+                    // 방향키와 게임 키의 기본 동작 방지
+                    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'w', 'W', 'a', 'A', 's', 'S', 'd', 'D'].includes(e.key)) {
+                        e.preventDefault();
+                    }
+                    
+                    switch(e.key) {
+                        case 'ArrowUp':
+                        case 'w':
+                        case 'W':
+                            if (this.direction.y === 0) {
+                                this.direction = {x: 0, y: -this.cellSize};
+                            }
+                            break;
+                        case 'ArrowDown':
+                        case 's':
+                        case 'S':
+                            if (this.direction.y === 0) {
+                                this.direction = {x: 0, y: this.cellSize};
+                            }
+                            break;
+                        case 'ArrowLeft':
+                        case 'a':
+                        case 'A':
+                            if (this.direction.x === 0) {
+                                this.direction = {x: -this.cellSize, y: 0};
+                            }
+                            break;
+                        case 'ArrowRight':
+                        case 'd':
+                        case 'D':
+                            if (this.direction.x === 0) {
+                                this.direction = {x: this.cellSize, y: 0};
+                            }
+                            break;
+                    }
+                });
+                
+                // 더블클릭 확대/축소 방지
+                document.addEventListener('dblclick', (e) => {
+                    e.preventDefault();
+                });
+                
+                // 터치 확대/축소 방지
+                document.addEventListener('gesturestart', (e) => {
+                    e.preventDefault();
+                });
+                
+                document.addEventListener('gesturechange', (e) => {
+                    e.preventDefault();
+                });
+                
+                document.addEventListener('gestureend', (e) => {
+                    e.preventDefault();
+                });
+                
+                // 버튼 이벤트
+                document.getElementById('startBtn').addEventListener('click', () => {
+                    this.startGame();
+                });
+                
+                document.getElementById('restartBtn').addEventListener('click', () => {
+                    this.restartGame();
+                });
+                
+                document.getElementById('playAgainBtn').addEventListener('click', () => {
+                    this.restartGame();
+                    this.gameOverElement.style.display = 'none';
+                    document.getElementById('gameOverBackdrop').style.display = 'none';
+                });
+                
+                // 모바일 컨트롤
+                document.querySelectorAll('.dpad-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        if (!this.gameRunning) return;
+                        
+                        const direction = e.target.dataset.direction;
+                        switch(direction) {
+                            case 'up':
+                                if (this.direction.y === 0) {
+                                    this.direction = {x: 0, y: -this.cellSize};
+                                }
+                                break;
+                            case 'down':
+                                if (this.direction.y === 0) {
+                                    this.direction = {x: 0, y: this.cellSize};
+                                }
+                                break;
+                            case 'left':
+                                if (this.direction.x === 0) {
+                                    this.direction = {x: -this.cellSize, y: 0};
+                                }
+                                break;
+                            case 'right':
+                                if (this.direction.x === 0) {
+                                    this.direction = {x: this.cellSize, y: 0};
+                                }
+                                break;
+                        }
+                    });
+                });
+            }
+            
+            generateFood() {
+                let food;
+                do {
+                    food = {
+                        x: Math.floor(Math.random() * (this.width / this.cellSize)) * this.cellSize,
+                        y: Math.floor(Math.random() * (this.height / this.cellSize)) * this.cellSize
+                    };
+                } while (this.snake.some(segment => segment.x === food.x && segment.y === food.y));
+                return food;
+            }
+            
+            startGame() {
+                if (this.gameRunning) return;
+                
+                this.gameRunning = true;
+                document.getElementById('startBtn').disabled = true;
+                
+                this.gameLoop = setInterval(() => {
+                    this.update();
+                    this.draw();
+                }, 150);
+            }
+            
+
+            
+            restartGame() {
+                clearInterval(this.gameLoop);
+                this.gameRunning = false;
+                this.snake = [{x: 300, y: 300}]; // 새로운 크기에 맞게 조정
+                this.direction = {x: this.cellSize, y: 0};
+                this.food = this.generateFood();
+                this.score = 0;
+                this.updateScore();
+                this.gameOverElement.style.display = 'none';
+                document.getElementById('gameOverBackdrop').style.display = 'none';
+                
+                document.getElementById('startBtn').disabled = false;
+                
+                this.draw();
+            }
+            
+            update() {
+                if (!this.gameRunning) return;
+                
+                const head = {
+                    x: this.snake[0].x + this.direction.x,
+                    y: this.snake[0].y + this.direction.y
+                };
+                
+                // 충돌 검사
+                if (this.checkCollision(head)) {
+                    this.gameOver();
+                    return;
+                }
+                
+                this.snake.unshift(head);
+                
+                // 먹이 먹었는지 검사
+                if (head.x === this.food.x && head.y === this.food.y) {
+                    this.score += 10;
+                    this.food = this.generateFood();
+                    this.updateScore();
+                } else {
+                    this.snake.pop();
+                }
+            }
+            
+            checkCollision(head) {
+                // 벽 충돌
+                if (head.x < 0 || head.x >= this.width || head.y < 0 || head.y >= this.height) {
+                    return true;
+                }
+                
+                // 자기 몸 충돌
+                return this.snake.some(segment => segment.x === head.x && segment.y === head.y);
+            }
+            
+            draw() {
+                // 배경 지우기
+                this.ctx.fillStyle = '#000';
+                this.ctx.fillRect(0, 0, this.width, this.height);
+                
+                // 뱀 그리기 (이미지 필수)
+                this.snake.forEach((segment, index) => {
+                    this.ctx.drawImage(this.snakeImage, segment.x, segment.y, this.cellSize, this.cellSize);
+                });
+                
+                // 먹이 그리기 (py_jogak.png 이미지 사용)
+                if (this.foodImageLoaded) {
+                    this.ctx.drawImage(this.foodImage, this.food.x, this.food.y, this.cellSize, this.cellSize);
+                } else {
+                    // 이미지 로딩 실패 시 기본 빨간색 네모
+                    this.ctx.fillStyle = '#FF5722';
+                    this.ctx.fillRect(this.food.x, this.food.y, this.cellSize, this.cellSize);
+                    this.ctx.strokeStyle = '#D84315';
+                    this.ctx.strokeRect(this.food.x, this.food.y, this.cellSize, this.cellSize);
+                }
+            }
+            
+            updateScore() {
+                this.scoreElement.textContent = this.score;
+            }
+            
+
+            
+            gameOver() {
+                clearInterval(this.gameLoop);
+                this.gameRunning = false;
+                this.finalScoreElement.textContent = this.score;
+                
+                // 배경과 얼럿 표시
+                document.getElementById('gameOverBackdrop').style.display = 'block';
+                this.gameOverElement.style.display = 'block';
+                
+                document.getElementById('startBtn').disabled = false;
+                
+                // 점수를 서버로 제출
+                this.submitScore();
+            }
+            
+            async submitScore() {
+                try {
+                    // URL에서 이메일 정보 가져오기
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const email = urlParams.get('email');
+                    
+                    if (email && this.score > 0) {
+                        const response = await fetch('/score', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                email: email,
+                                score: this.score
+                            })
+                        });
+                        
+                        if (response.ok) {
+                            console.log('점수가 성공적으로 저장되었습니다.');
+                        } else {
+                            console.error('점수 저장 실패:', response.status);
+                        }
+                    }
+                } catch (error) {
+                    console.error('점수 제출 중 오류:', error);
+                }
+            }
+        }
+        
+        // 게임 시작
+        document.addEventListener('DOMContentLoaded', () => {
+            new SnakeGame();
+        });
+    </script>
+</body>
+</html>

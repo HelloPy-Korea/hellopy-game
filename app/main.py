@@ -20,6 +20,7 @@ from .schemas import (
     LeaderboardResponse,
     ScoreItem,
     UserItem,
+    UserWithStats,
 )
 
 # Simple in-memory broadcaster for SSE
@@ -178,6 +179,12 @@ def get_leaderboard(db: Session = Depends(get_db)):
         .limit(10)
         .all()
     )
+    return LeaderboardResponse(
+        top=[
+            ScoreItem(email=r.user_email, score=r.score, created_at=r.created_at)
+            for r in top
+        ]
+    )
 
 @app.get("/game/leaderboard", response_model=LeaderboardResponse)
 def get_leaderboard_game(db: Session = Depends(get_db)):
@@ -186,12 +193,6 @@ def get_leaderboard_game(db: Session = Depends(get_db)):
 @app.get("/game/leaderboard/", response_model=LeaderboardResponse)
 def get_leaderboard_game_slash(db: Session = Depends(get_db)):
     return get_leaderboard(db)
-    return LeaderboardResponse(
-        top=[
-            ScoreItem(email=r.user_email, score=r.score, created_at=r.created_at)
-            for r in top
-        ]
-    )
 
 
 @app.get("/users", response_model=List[UserItem])
@@ -204,9 +205,30 @@ def list_users(limit: int = 100, db: Session = Depends(get_db)):
     )
     return [UserItem(email=r.email, created_at=r.created_at) for r in rows]
 
+@app.get("/users-with-scores", response_model=List[UserWithStats])
+def list_users_with_scores(limit: int = 100, db: Session = Depends(get_db)):
+    rows = (
+        db.query(User)
+        .order_by(User.created_at.desc())
+        .limit(max(1, min(limit, 1000)))
+        .all()
+    )
+    # Compute stats for each user
+    result: List[UserWithStats] = []
+    for user in rows:
+        scores = db.query(Score).filter(Score.user_email == user.email).all()
+        max_score = max([s.score for s in scores], default=0)
+        game_count = len(scores)
+        result.append(UserWithStats(email=user.email, created_at=user.created_at, max_score=max_score, game_count=game_count))
+    return result
+
 @app.get("/game/users", response_model=List[UserItem])
 def list_users_game(limit: int = 100, db: Session = Depends(get_db)):
     return list_users(limit=limit, db=db)
+
+@app.get("/game/users-with-scores", response_model=List[UserWithStats])
+def list_users_with_scores_game(limit: int = 100, db: Session = Depends(get_db)):
+    return list_users_with_scores(limit=limit, db=db)
 
 @app.get("/game/users/", response_model=List[UserItem])
 def list_users_game_slash(limit: int = 100, db: Session = Depends(get_db)):

@@ -25,3 +25,10 @@ class LeaderboardResponse(BaseModel):
 class UserItem(BaseModel):
     email: EmailStr
     created_at: datetime
+
+# Users with stats
+class UserWithStats(BaseModel):
+    email: EmailStr
+    created_at: datetime
+    max_score: int
+    game_count: int

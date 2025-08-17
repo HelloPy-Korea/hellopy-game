@@ -235,13 +235,23 @@ def list_users_game_slash(limit: int = 100, db: Session = Depends(get_db)):
     return list_users(limit=limit, db=db)
 
 @app.get("/user-scores")
-def get_user_scores(email: str, db: Session = Depends(get_db)):
-    """특정 사용자의 모든 점수를 가져옵니다."""
-    scores = db.query(Score).filter(Score.user_email == email.lower().strip()).order_by(Score.created_at.desc()).all()
+def get_user_scores(
+    email: str | None = Query(default=None), 
+    db: Session = Depends(get_db)
+):
+    """사용자의 점수를 가져옵니다. email이 없으면 전체 점수를 반환합니다."""
+    query = db.query(Score)
+
+    if email:
+        query = query.filter(Score.user_email == email.lower().strip())
+
+    scores = query.order_by(Score.created_at.desc()).all()
+
     return [
         {
             "score": score.score,
-            "created_at": score.created_at.isoformat() if score.created_at else None
+            "created_at": score.created_at.isoformat() if score.created_at else None,
+            "user_email": score.user_email,  # 전체 조회일 경우 필요할 수 있음
         }
         for score in scores
     ]
